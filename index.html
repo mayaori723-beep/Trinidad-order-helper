@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ORDER HELPER</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <main class="app-shell">
+    <section class="hero">
+      <p class="eyebrow">ORDER HELPER</p>
+      <h1>ORDER HELPER</h1>
+      <p class="lead">
+        弊社の発注リストとメーカーCSVを読み込み、数量をすばやく反映します。
+      </p>
+    </section>
+
+    <section class="panel">
+      <div class="mode-switch" role="tablist" aria-label="メーカー切替">
+        <button id="mode-trinidad" class="mode-button is-active" type="button">トリニダード</button>
+        <button id="mode-cosmo" class="mode-button" type="button">COSMO DARTS</button>
+      </div>
+
+      <div class="upload-grid">
+        <label class="dropzone" id="placing-dropzone">
+          <input id="placing-file" type="file" accept=".csv" multiple>
+          <span class="dropzone-label">1. 弊社発注リスト</span>
+          <strong id="placing-name">placing_plans を選択</strong>
+          <small id="placing-help">クロスモール → 発注処理 → 発注予定作成 → データ作成 → 発注予定一覧 → 例: 116 トリニダード を CSV出力</small>
+        </label>
+
+        <div class="maker-block">
+          <label class="dropzone" id="maker-dropzone">
+            <input id="maker-file" type="file" accept=".csv">
+            <span class="dropzone-label">2. メーカー発注フォーム</span>
+            <strong id="maker-name">gy_product を選択</strong>
+            <small id="maker-help">トリニダードHP で 注文用CSVをダウンロード。初回だけ選択、以後はブラウザ内に保存した内容を使います。</small>
+          </label>
+          <a id="maker-site-link" class="maker-site-link" href="https://www.tito-shop.com/" target="_blank" rel="noopener noreferrer">メーカーサイトを開く</a>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="run-button" class="primary-button">数量を反映する</button>
+        <button id="sample-button" class="secondary-button">使い方メモ</button>
+        <button id="clear-maker-button" class="secondary-button">保存済みメーカーCSVを削除</button>
+      </div>
+
+      <label class="option-row">
+        <input id="zero-out-of-stock" type="checkbox" checked>
+        <span>メーカーCSVの `在庫` が `×` の商品は、数量を `0` にする</span>
+      </label>
+
+      <p id="status" class="status">CSVを2つ選んでください。</p>
+
+      <div id="result-card" class="result-card hidden">
+        <h2>処理結果</h2>
+        <p id="summary" class="summary"></p>
+        <div class="download-row">
+          <button id="csv-save" class="download-button">更新済みCSVを保存</button>
+          <button id="report-save" class="download-button alt">レポートを保存</button>
+          <button id="csv-open" class="download-button alt">CSVを表示</button>
+          <button id="report-open" class="download-button alt">レポートを表示</button>
+        </div>
+        <p class="save-note">
+          保存ダイアログが出ないブラウザでは、「CSVを表示」「レポートを表示」から内容を開けます。
+        </p>
+      </div>
+    </section>
+
+    <section id="viewer-card" class="panel panel-tight hidden">
+      <div class="panel-header">
+        <h2 id="viewer-title">出力内容</h2>
+        <p>必要ならここからコピーできます。</p>
+      </div>
+      <textarea id="viewer-text" class="viewer-text" spellcheck="false"></textarea>
+    </section>
+
+    <section class="panel panel-tight">
+      <div class="panel-header">
+        <h2>一致プレビュー</h2>
+        <p>先頭20件を表示します。</p>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>JAN</th>
+              <th>メーカー商品名</th>
+              <th>反映数量</th>
+            </tr>
+          </thead>
+          <tbody id="preview-body">
+            <tr>
+              <td colspan="3" class="empty-cell">まだ処理していません。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel panel-tight">
+      <div class="panel-header">
+        <h2>メモ</h2>
+      </div>
+      <ul class="notes">
+        <li>メーカー発注フォームは一度選ぶと、このブラウザに保存されます。</li>
+        <li>次回からは弊社発注リストだけ毎回選べば処理できます。</li>
+        <li id="notes-mode-line">トリニダードでは通常どおり1本の弊社発注リストで使えます。</li>
+        <li>照合は `placing_plans` の `JANコード` と、メーカーCSV の `JANCODE` です。</li>
+        <li>ブラウザ版の出力CSVは UTF-8 でダウンロードされます。</li>
+        <li>元ファイルは上書きせず、ダウンロードファイルとして保存します。</li>
+      </ul>
+    </section>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>
