@@ -46,10 +46,10 @@ const MODE_CONFIG = {
     makerHelpDefault: "トリニダードHP で 注文用CSVをダウンロード。初回だけ選択、以後はブラウザ内に保存した内容を使います。",
     makerHelpSelected: "トリニダードHP で 注文用CSVをダウンロード。今回選んだメーカーCSVで保存内容も更新されます。",
     makerHelpCached: "トリニダードHP で 注文用CSVをダウンロード。保存済みデータを使用します。更新日時: {savedAt}",
-    placingHelp: "クロスモール → 発注処理 → 発注予定作成 → データ作成 → 発注予定一覧 → 116 トリニダード を CSV出力",
-    placingPlaceholder: "placing_plans を選択",
-    notesModeLine: "トリニダードでは通常どおり1本の弊社発注リストで使えます。",
-    multiplePlacing: false,
+    placingHelp: "クロスモール → 発注処理 → 発注予定作成 → データ作成 → 発注予定一覧 → 116 トリニダード 156 CONDOR の2つを CSV出力",
+    placingPlaceholder: "placing_plans を2本選択",
+    notesModeLine: "トリニダードでは弊社発注リストを2本まとめて選択できます。",
+    multiplePlacing: true,
   },
   cosmo: {
     makerStorageKey: "maker-csv-cache-cosmo-v1",
@@ -606,7 +606,7 @@ runButton.addEventListener("click", processFiles);
 
 sampleButton.addEventListener("click", async () => {
   if (currentMode === "trinidad") {
-    setStatus("トリニダードでは placing_plans を1本、メーカーCSVは gy_product を初回だけ選んで保存してください。");
+    setStatus("トリニダードでは placing_plans を2本まとめて選び、メーカーCSVは gy_product を初回だけ選んで保存してください。");
   } else {
     setStatus("COSMOでは placing_plans を2本まとめて選び、メーカーCSVは ONLINESHOPで始まるCSVを初回だけ選んで保存してください。");
   }
