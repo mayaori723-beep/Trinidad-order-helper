@@ -27,6 +27,11 @@ const notesModeLine = document.getElementById("notes-mode-line");
 const viewerCard = document.getElementById("viewer-card");
 const viewerTitle = document.getElementById("viewer-title");
 const viewerText = document.getElementById("viewer-text");
+const unmatchedCard = document.getElementById("unmatched-card");
+const unmatchedOrdersTitle = document.getElementById("unmatched-orders-title");
+const unmatchedOrdersBody = document.getElementById("unmatched-orders-body");
+const unmatchedMakerTitle = document.getElementById("unmatched-maker-title");
+const unmatchedMakerBody = document.getElementById("unmatched-maker-body");
 const zeroOutOfStockInput = document.getElementById("zero-out-of-stock");
 const modeTrinidadButton = document.getElementById("mode-trinidad");
 const modeCosmoButton = document.getElementById("mode-cosmo");
@@ -415,6 +420,50 @@ function renderPreview(items) {
   }
 }
 
+function renderUnmatched(report) {
+  unmatchedOrdersTitle.textContent = `発注リスト未一致 (${report.unmatchedOrders.length}件)`;
+  unmatchedMakerTitle.textContent = `メーカーCSV未一致 (${report.unmatchedMakerRows.length}行)`;
+
+  unmatchedOrdersBody.innerHTML = "";
+  if (report.unmatchedOrders.length === 0) {
+    unmatchedOrdersBody.innerHTML = `
+      <tr>
+        <td colspan="2" class="empty-cell">未一致はありません。</td>
+      </tr>
+    `;
+  } else {
+    for (const item of report.unmatchedOrders) {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${escapeHtml(item.jan)}</td>
+        <td>${escapeHtml(String(item.qty))}</td>
+      `;
+      unmatchedOrdersBody.appendChild(row);
+    }
+  }
+
+  unmatchedMakerBody.innerHTML = "";
+  if (report.unmatchedMakerRows.length === 0) {
+    unmatchedMakerBody.innerHTML = `
+      <tr>
+        <td colspan="3" class="empty-cell">未一致はありません。</td>
+      </tr>
+    `;
+  } else {
+    for (const rowData of report.unmatchedMakerRows) {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${escapeHtml(rowData["商品コード"] ?? "")}</td>
+        <td>${escapeHtml(rowData["商品名"] ?? "")}</td>
+        <td>${escapeHtml(normalizeJan(rowData[REQUIRED_FIELDS.makerJan] ?? ""))}</td>
+      `;
+      unmatchedMakerBody.appendChild(row);
+    }
+  }
+
+  unmatchedCard.classList.remove("hidden");
+}
+
 function escapeHtml(value) {
   return `${value}`
     .replaceAll("&", "&amp;")
@@ -491,6 +540,7 @@ async function processFiles() {
 
   revokeDownloads();
   resultCard.classList.add("hidden");
+  unmatchedCard.classList.add("hidden");
   setStatus("処理中です...");
 
   try {
@@ -591,6 +641,7 @@ async function processFiles() {
     summaryEl.innerHTML = summaryLines.map((line) => escapeHtml(line)).join("<br>");
     resultCard.classList.remove("hidden");
     renderPreview(previewItems);
+    renderUnmatched(report);
     viewerCard.classList.add("hidden");
     setStatus("処理が完了しました。保存ボタン、または表示ボタンを使ってください。");
   } catch (error) {

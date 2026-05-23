@@ -77,6 +77,52 @@
       <textarea id="viewer-text" class="viewer-text" spellcheck="false"></textarea>
     </section>
 
+    <section id="unmatched-card" class="panel panel-tight hidden">
+      <div class="panel-header">
+        <h2>未一致一覧</h2>
+        <p>件数の内訳を画面で確認できます。</p>
+      </div>
+      <div class="unmatched-grid">
+        <div class="unmatched-block">
+          <h3 id="unmatched-orders-title">発注リスト未一致</h3>
+          <div class="table-wrap unmatched-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>JAN</th>
+                  <th>数量</th>
+                </tr>
+              </thead>
+              <tbody id="unmatched-orders-body">
+                <tr>
+                  <td colspan="2" class="empty-cell">まだ処理していません。</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="unmatched-block">
+          <h3 id="unmatched-maker-title">メーカーCSV未一致</h3>
+          <div class="table-wrap unmatched-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>商品コード</th>
+                  <th>商品名</th>
+                  <th>JAN</th>
+                </tr>
+              </thead>
+              <tbody id="unmatched-maker-body">
+                <tr>
+                  <td colspan="3" class="empty-cell">まだ処理していません。</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section class="panel panel-tight">
       <div class="panel-header">
         <h2>一致プレビュー</h2>
