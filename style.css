@@ -261,22 +261,6 @@ button:hover,
   font-size: 1.15rem;
 }
 
-.unmatched-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.unmatched-block h3 {
-  margin: 0 0 10px;
-  font-size: 1rem;
-  color: var(--brand-deep);
-}
-
-.unmatched-wrap {
-  max-height: 320px;
-}
-
 .summary {
   margin: 10px 0 0;
   line-height: 1.75;
@@ -371,10 +355,6 @@ td {
   }
 
   .upload-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .unmatched-grid {
     grid-template-columns: 1fr;
   }
 

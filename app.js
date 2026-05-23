@@ -18,8 +18,8 @@ const resultCard = document.getElementById("result-card");
 const summaryEl = document.getElementById("summary");
 const csvSaveButton = document.getElementById("csv-save");
 const reportSaveButton = document.getElementById("report-save");
-const csvOpenButton = document.getElementById("csv-open");
-const reportOpenButton = document.getElementById("report-open");
+const unmatchedOrdersSaveButton = document.getElementById("unmatched-orders-save");
+const unmatchedMakerSaveButton = document.getElementById("unmatched-maker-save");
 const previewBody = document.getElementById("preview-body");
 const makerHelp = document.getElementById("maker-help");
 const makerSiteLink = document.getElementById("maker-site-link");
@@ -27,11 +27,6 @@ const notesModeLine = document.getElementById("notes-mode-line");
 const viewerCard = document.getElementById("viewer-card");
 const viewerTitle = document.getElementById("viewer-title");
 const viewerText = document.getElementById("viewer-text");
-const unmatchedCard = document.getElementById("unmatched-card");
-const unmatchedOrdersTitle = document.getElementById("unmatched-orders-title");
-const unmatchedOrdersBody = document.getElementById("unmatched-orders-body");
-const unmatchedMakerTitle = document.getElementById("unmatched-maker-title");
-const unmatchedMakerBody = document.getElementById("unmatched-maker-body");
 const zeroOutOfStockInput = document.getElementById("zero-out-of-stock");
 const modeTrinidadButton = document.getElementById("mode-trinidad");
 const modeCosmoButton = document.getElementById("mode-cosmo");
@@ -278,6 +273,16 @@ function serializeCsv(headers, records) {
   return `\ufeff${lines.join("\r\n")}`;
 }
 
+function serializeObjectsCsv(headers, records) {
+  return serializeCsv(headers, records.map((record) => {
+    const row = {};
+    for (const header of headers) {
+      row[header] = record[header] ?? "";
+    }
+    return row;
+  }));
+}
+
 function parseIntSafe(value) {
   const normalized = `${value ?? ""}`.trim().replaceAll(",", "");
   if (!normalized) {
@@ -420,50 +425,6 @@ function renderPreview(items) {
   }
 }
 
-function renderUnmatched(report) {
-  unmatchedOrdersTitle.textContent = `発注リスト未一致 (${report.unmatchedOrders.length}件)`;
-  unmatchedMakerTitle.textContent = `メーカーCSV未一致 (${report.unmatchedMakerRows.length}行)`;
-
-  unmatchedOrdersBody.innerHTML = "";
-  if (report.unmatchedOrders.length === 0) {
-    unmatchedOrdersBody.innerHTML = `
-      <tr>
-        <td colspan="2" class="empty-cell">未一致はありません。</td>
-      </tr>
-    `;
-  } else {
-    for (const item of report.unmatchedOrders) {
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td>${escapeHtml(item.jan)}</td>
-        <td>${escapeHtml(String(item.qty))}</td>
-      `;
-      unmatchedOrdersBody.appendChild(row);
-    }
-  }
-
-  unmatchedMakerBody.innerHTML = "";
-  if (report.unmatchedMakerRows.length === 0) {
-    unmatchedMakerBody.innerHTML = `
-      <tr>
-        <td colspan="3" class="empty-cell">未一致はありません。</td>
-      </tr>
-    `;
-  } else {
-    for (const rowData of report.unmatchedMakerRows) {
-      const row = document.createElement("tr");
-      row.innerHTML = `
-        <td>${escapeHtml(rowData["商品コード"] ?? "")}</td>
-        <td>${escapeHtml(rowData["商品名"] ?? "")}</td>
-        <td>${escapeHtml(normalizeJan(rowData[REQUIRED_FIELDS.makerJan] ?? ""))}</td>
-      `;
-      unmatchedMakerBody.appendChild(row);
-    }
-  }
-
-  unmatchedCard.classList.remove("hidden");
-}
-
 function escapeHtml(value) {
   return `${value}`
     .replaceAll("&", "&amp;")
@@ -540,7 +501,6 @@ async function processFiles() {
 
   revokeDownloads();
   resultCard.classList.add("hidden");
-  unmatchedCard.classList.add("hidden");
   setStatus("処理中です...");
 
   try {
@@ -610,10 +570,27 @@ async function processFiles() {
     const timestamp = createTimestamp();
     const outputName = `${makerFileName.replace(/\.csv$/i, "")}_filled_${timestamp}.csv`;
     const reportName = `${makerFileName.replace(/\.csv$/i, "")}_report_${timestamp}.txt`;
+    const unmatchedOrdersName = `${makerFileName.replace(/\.csv$/i, "")}_unmatched_orders_${timestamp}.csv`;
+    const unmatchedMakerName = `${makerFileName.replace(/\.csv$/i, "")}_unmatched_maker_${timestamp}.csv`;
 
     const outputCsv = serializeCsv(makerCsv.headers, makerCsv.records);
     const csvBlob = downloadBlob(outputCsv, outputName, "text/csv;charset=utf-8");
     const reportBlob = downloadBlob(report.text, reportName, "text/plain;charset=utf-8");
+    const unmatchedOrdersCsv = serializeObjectsCsv(
+      ["JAN", "数量"],
+      report.unmatchedOrders.map((item) => ({ JAN: item.jan, 数量: item.qty })),
+    );
+    const unmatchedMakerCsv = serializeObjectsCsv(
+      ["商品コード", "商品名", "JAN", "数量"],
+      report.unmatchedMakerRows.map((row) => ({
+        商品コード: row["商品コード"] ?? "",
+        商品名: row["商品名"] ?? "",
+        JAN: normalizeJan(row[REQUIRED_FIELDS.makerJan] ?? ""),
+        数量: row[REQUIRED_FIELDS.makerQty] ?? "",
+      })),
+    );
+    const unmatchedOrdersBlob = downloadBlob(unmatchedOrdersCsv, unmatchedOrdersName, "text/csv;charset=utf-8");
+    const unmatchedMakerBlob = downloadBlob(unmatchedMakerCsv, unmatchedMakerName, "text/csv;charset=utf-8");
     latestOutputs = {
       csv: {
         ...csvBlob,
@@ -626,6 +603,18 @@ async function processFiles() {
         text: report.text,
         title: "レポート",
         mimeType: "text/plain;charset=utf-8",
+      },
+      unmatchedOrders: {
+        ...unmatchedOrdersBlob,
+        text: unmatchedOrdersCsv,
+        title: "発注リスト未一致CSV",
+        mimeType: "text/csv;charset=utf-8",
+      },
+      unmatchedMaker: {
+        ...unmatchedMakerBlob,
+        text: unmatchedMakerCsv,
+        title: "メーカーCSV未一致CSV",
+        mimeType: "text/csv;charset=utf-8",
       },
     };
 
@@ -641,7 +630,6 @@ async function processFiles() {
     summaryEl.innerHTML = summaryLines.map((line) => escapeHtml(line)).join("<br>");
     resultCard.classList.remove("hidden");
     renderPreview(previewItems);
-    renderUnmatched(report);
     viewerCard.classList.add("hidden");
     setStatus("処理が完了しました。保存ボタン、または表示ボタンを使ってください。");
   } catch (error) {
@@ -739,22 +727,48 @@ reportSaveButton.addEventListener("click", async () => {
   );
 });
 
-csvOpenButton.addEventListener("click", () => {
-  if (!latestOutputs?.csv) {
+unmatchedOrdersSaveButton.addEventListener("click", async () => {
+  if (!latestOutputs?.unmatchedOrders) {
     setStatus("先に数量反映を実行してください。");
     return;
   }
-  openTextViewer(latestOutputs.csv.title, latestOutputs.csv.text);
-  setStatus("CSV内容を画面に表示しました。必要ならコピーしてください。");
+  try {
+    const saved = await saveWithPicker(
+      latestOutputs.unmatchedOrders.fileName,
+      latestOutputs.unmatchedOrders.text,
+      latestOutputs.unmatchedOrders.mimeType,
+    );
+    if (saved) {
+      setStatus(`発注リスト未一致CSVを保存しました: ${latestOutputs.unmatchedOrders.fileName}`);
+      return;
+    }
+  } catch (error) {
+    console.error(error);
+  }
+  openTextViewer(latestOutputs.unmatchedOrders.title, latestOutputs.unmatchedOrders.text);
+  setStatus("発注リスト未一致CSVを画面に表示しました。必要ならコピーしてください。");
 });
 
-reportOpenButton.addEventListener("click", () => {
-  if (!latestOutputs?.report) {
+unmatchedMakerSaveButton.addEventListener("click", async () => {
+  if (!latestOutputs?.unmatchedMaker) {
     setStatus("先に数量反映を実行してください。");
     return;
   }
-  openTextViewer(latestOutputs.report.title, latestOutputs.report.text);
-  setStatus("レポート内容を画面に表示しました。必要ならコピーしてください。");
+  try {
+    const saved = await saveWithPicker(
+      latestOutputs.unmatchedMaker.fileName,
+      latestOutputs.unmatchedMaker.text,
+      latestOutputs.unmatchedMaker.mimeType,
+    );
+    if (saved) {
+      setStatus(`メーカーCSV未一致CSVを保存しました: ${latestOutputs.unmatchedMaker.fileName}`);
+      return;
+    }
+  } catch (error) {
+    console.error(error);
+  }
+  openTextViewer(latestOutputs.unmatchedMaker.title, latestOutputs.unmatchedMaker.text);
+  setStatus("メーカーCSV未一致CSVを画面に表示しました。必要ならコピーしてください。");
 });
 
 applyModeUi();
