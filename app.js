@@ -338,6 +338,25 @@ function buildOrderMap(records) {
   return qtyMap;
 }
 
+function getMakerDuplicateLaterRows(records) {
+  const seenJans = new Set();
+  const duplicateRows = [];
+
+  for (const record of records) {
+    const jan = normalizeJan(record[REQUIRED_FIELDS.makerJan]);
+    if (!jan) {
+      continue;
+    }
+    if (seenJans.has(jan)) {
+      duplicateRows.push(record);
+      continue;
+    }
+    seenJans.add(jan);
+  }
+
+  return duplicateRows;
+}
+
 function createReport(qtyMap, matchedJans, makerRecords) {
   const unmatchedOrders = [];
   for (const [jan, qty] of qtyMap.entries()) {
@@ -346,9 +365,11 @@ function createReport(qtyMap, matchedJans, makerRecords) {
     }
   }
 
+  const duplicateLaterRows = getMakerDuplicateLaterRows(makerRecords);
+  const duplicateLaterRowSet = new Set(duplicateLaterRows);
   const unmatchedMakerRows = makerRecords.filter((record) => {
     const jan = normalizeJan(record[REQUIRED_FIELDS.makerJan]);
-    return jan && !matchedJans.has(jan);
+    return jan && !matchedJans.has(jan) && !duplicateLaterRowSet.has(record);
   });
 
   const now = new Date();
@@ -395,6 +416,7 @@ function createReport(qtyMap, matchedJans, makerRecords) {
     text: lines.join("\n"),
     unmatchedOrders,
     unmatchedMakerRows,
+    duplicateLaterRows,
   };
 }
 
@@ -544,12 +566,13 @@ async function processFiles() {
     const mergedPlacingRecords = placingCsvList.flatMap((csv) => csv.records);
     const qtyMap = buildOrderMap(mergedPlacingRecords);
     const matchedJans = new Set();
+    const updatedMakerJans = new Set();
     const previewItems = [];
     let zeroedOutOfStockCount = 0;
 
     for (const record of makerCsv.records) {
       const jan = normalizeJan(record[REQUIRED_FIELDS.makerJan]);
-      if (!jan || !qtyMap.has(jan)) {
+      if (!jan || !qtyMap.has(jan) || updatedMakerJans.has(jan)) {
         continue;
       }
       let qty = qtyMap.get(jan);
@@ -559,6 +582,7 @@ async function processFiles() {
       }
       record[REQUIRED_FIELDS.makerQty] = String(qty);
       matchedJans.add(jan);
+      updatedMakerJans.add(jan);
       previewItems.push({
         jan,
         name: record["商品名"] ?? "",
@@ -621,6 +645,7 @@ async function processFiles() {
     const summaryLines = [
       `弊社発注リスト読込: ${placingFiles.length}ファイル / ${mergedPlacingRecords.length}行`,
       `反映完了: ${matchedJans.size}件のJANをメーカーCSVへ更新しました。`,
+      `重複JANでスキップ: ${report.duplicateLaterRows.length}行`,
       `在庫×で数量0にした行: ${zeroedOutOfStockCount}行`,
       `発注リスト未一致: ${report.unmatchedOrders.length}件`,
       `メーカーCSV未一致: ${report.unmatchedMakerRows.length}行`,
